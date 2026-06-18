@@ -1,0 +1,513 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>English Master AI</title>
+
+<style>
+*{
+    margin:0;
+    padding:0;
+    box-sizing:border-box;
+    font-family:Arial, sans-serif;
+}
+
+body{
+    background:#0f172a;
+    color:white;
+    min-height:100vh;
+}
+
+.container{
+    max-width:900px;
+    margin:auto;
+    padding:20px;
+}
+
+.card{
+    background:#1e293b;
+    padding:25px;
+    border-radius:15px;
+    margin-top:20px;
+}
+
+h1,h2{
+    text-align:center;
+    margin-bottom:20px;
+}
+
+button{
+    background:#3b82f6;
+    color:white;
+    border:none;
+    padding:12px 20px;
+    border-radius:10px;
+    cursor:pointer;
+    margin-top:15px;
+}
+
+button:hover{
+    background:#2563eb;
+}
+
+input{
+    width:100%;
+    padding:12px;
+    margin-top:10px;
+    border-radius:10px;
+    border:none;
+}
+
+.progress{
+    width:100%;
+    height:25px;
+    background:#334155;
+    border-radius:20px;
+    overflow:hidden;
+    margin-top:15px;
+}
+
+.progress-bar{
+    height:100%;
+    width:0%;
+    background:#22c55e;
+    transition:0.5s;
+}
+
+.option{
+    background:#334155;
+    padding:12px;
+    border-radius:10px;
+    margin-top:10px;
+    cursor:pointer;
+}
+
+.option:hover{
+    background:#475569;
+}
+
+.hidden{
+    display:none;
+}
+
+.stats{
+    display:flex;
+    justify-content:space-between;
+    margin-top:15px;
+}
+
+.level{
+    font-size:20px;
+    color:#facc15;
+    font-weight:bold;
+}
+</style>
+</head>
+<body>
+
+<div class="container">
+
+<h1>🇬🇧 English Master AI</h1>
+
+<div id="startCard" class="card">
+
+<h2>Evaluación Inicial</h2>
+
+<p>Responde estas preguntas para detectar tu nivel.</p>
+
+<div id="assessment"></div>
+
+<button onclick="finishAssessment()">Analizar Nivel</button>
+
+</div>
+
+<div id="appCard" class="card hidden">
+
+<div class="stats">
+<div>XP: <span id="xp">0</span></div>
+<div>Nivel: <span id="userLevel" class="level"></span></div>
+</div>
+
+<div class="progress">
+<div id="progressBar" class="progress-bar"></div>
+</div>
+
+<h2 style="margin-top:20px;">Lección Actual</h2>
+
+<div id="lesson"></div>
+
+</div>
+
+</div>
+
+<script>
+
+// =========================
+// BASE DE DATOS
+// =========================
+
+const assessmentQuestions = [
+
+{
+q:"¿Cómo se dice 'Hola' en inglés?",
+a:"Hello"
+},
+
+{
+q:"¿Cómo se dice 'Casa' en inglés?",
+a:"House"
+},
+
+{
+q:"Completa: I ___ a student",
+a:"am"
+},
+
+{
+q:"¿Qué significa 'Beautiful'?",
+a:"Hermoso"
+}
+
+];
+
+const lessons = {
+
+beginner:[
+{
+question:"Dog significa:",
+options:["Perro","Gato","Pájaro","Pez"],
+answer:"Perro"
+},
+{
+question:"Apple significa:",
+options:["Manzana","Mesa","Auto","Casa"],
+answer:"Manzana"
+}
+],
+
+intermediate:[
+{
+question:"Choose the correct sentence",
+options:[
+"I have been studying",
+"I studying have",
+"Have studying I",
+"Studying have I"
+],
+answer:"I have been studying"
+},
+{
+question:"Past tense of GO",
+options:["Goed","Went","Gone","Going"],
+answer:"Went"
+}
+],
+
+advanced:[
+{
+question:"What is a synonym of 'Huge'?",
+options:["Tiny","Massive","Small","Weak"],
+answer:"Massive"
+},
+{
+question:"Passive voice of: They built the house",
+options:[
+"The house was built",
+"The house built",
+"The house is build",
+"The house building"
+],
+answer:"The house was built"
+}
+],
+
+expert:[
+{
+question:"Choose the most formal sentence",
+options:[
+"I can't attend",
+"I regret that I am unable to attend",
+"No way I can go",
+"I'm not going"
+],
+answer:"I regret that I am unable to attend"
+},
+{
+question:"Meaning of 'Ubiquitous'",
+options:[
+"Rare",
+"Present everywhere",
+"Hidden",
+"Expensive"
+],
+answer:"Present everywhere"
+}
+]
+
+};
+
+// =========================
+// VARIABLES
+// =========================
+
+let score = 0;
+let xp = 0;
+let currentLevel = "beginner";
+let lessonIndex = 0;
+
+// =========================
+// EVALUACIÓN INICIAL
+// =========================
+
+const assessmentDiv =
+document.getElementById("assessment");
+
+assessmentQuestions.forEach((item,index)=>{
+
+assessmentDiv.innerHTML += `
+<p style="margin-top:15px;">
+${index+1}. ${item.q}
+</p>
+<input id="a${index}" />
+`;
+
+});
+
+function finishAssessment(){
+
+score = 0;
+
+assessmentQuestions.forEach((item,index)=>{
+
+const value =
+document.getElementById(`a${index}`)
+.value.trim().toLowerCase();
+
+if(
+value === item.a.toLowerCase()
+){
+score++;
+}
+
+});
+
+if(score<=1){
+currentLevel="beginner";
+}
+else if(score===2){
+currentLevel="intermediate";
+}
+else if(score===3){
+currentLevel="advanced";
+}
+else{
+currentLevel="expert";
+}
+
+document.getElementById("startCard")
+.classList.add("hidden");
+
+document.getElementById("appCard")
+.classList.remove("hidden");
+
+document.getElementById("userLevel")
+.textContent = getLevelName();
+
+loadLesson();
+
+saveData();
+}
+
+// =========================
+// MOSTRAR LECCIÓN
+// =========================
+
+function loadLesson(){
+
+const data =
+lessons[currentLevel];
+
+if(lessonIndex >= data.length){
+
+lessonIndex = 0;
+
+xp += 50;
+
+upgradeLevel();
+
+saveData();
+}
+
+const lesson =
+data[lessonIndex];
+
+let html =
+`<h3>${lesson.question}</h3>`;
+
+lesson.options.forEach(option=>{
+
+html += `
+<div class="option"
+onclick="checkAnswer('${option}')">
+${option}
+</div>
+`;
+
+});
+
+document.getElementById("lesson")
+.innerHTML = html;
+
+updateProgress();
+}
+
+// =========================
+// RESPUESTA
+// =========================
+
+function checkAnswer(answer){
+
+const lesson =
+lessons[currentLevel][lessonIndex];
+
+if(answer===lesson.answer){
+
+xp += 10;
+
+alert("✅ Correcto");
+
+}else{
+
+alert("❌ Incorrecto");
+}
+
+lessonIndex++;
+
+loadLesson();
+
+saveData();
+}
+
+// =========================
+// PROGRESO
+// =========================
+
+function updateProgress(){
+
+let percent =
+Math.min((xp % 100),100);
+
+document.getElementById("xp")
+.textContent = xp;
+
+document.getElementById("progressBar")
+.style.width =
+percent + "%";
+
+}
+
+// =========================
+// ASCENSO
+// =========================
+
+function upgradeLevel(){
+
+if(xp>=50 && currentLevel==="beginner"){
+currentLevel="intermediate";
+}
+
+else if(xp>=100 && currentLevel==="intermediate"){
+currentLevel="advanced";
+}
+
+else if(xp>=150 && currentLevel==="advanced"){
+currentLevel="expert";
+}
+
+document.getElementById("userLevel")
+.textContent =
+getLevelName();
+}
+
+// =========================
+// NOMBRE DEL NIVEL
+// =========================
+
+function getLevelName(){
+
+switch(currentLevel){
+
+case "beginner":
+return "Principiante";
+
+case "intermediate":
+return "Intermedio";
+
+case "advanced":
+return "Avanzado";
+
+case "expert":
+return "Experto";
+
+default:
+return "Principiante";
+}
+
+}
+
+// =========================
+// GUARDAR DATOS
+// =========================
+
+function saveData(){
+
+localStorage.setItem(
+"englishApp",
+JSON.stringify({
+xp,
+currentLevel,
+lessonIndex
+})
+);
+
+}
+
+// =========================
+// CARGAR DATOS
+// =========================
+
+function loadData(){
+
+const data =
+JSON.parse(
+localStorage.getItem("englishApp")
+);
+
+if(!data) return;
+
+xp = data.xp;
+currentLevel = data.currentLevel;
+lessonIndex = data.lessonIndex;
+
+document.getElementById("startCard")
+.classList.add("hidden");
+
+document.getElementById("appCard")
+.classList.remove("hidden");
+
+document.getElementById("userLevel")
+.textContent =
+getLevelName();
+
+loadLesson();
+}
+
+// =========================
+
+loadData();
+
+</script>
+
+</body>
+</html>
